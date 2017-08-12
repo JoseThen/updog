@@ -1,0 +1,76 @@
+#!/bin/sh
+
+localbin=/usr/local/bin  # This directory is commonly in your path
+GREEN='\033[0;32m' 		 # The color green for formatting
+NC='\033[0m'			 # No Color to move back to original coloring
+CYAN='\033[0;36m'		 # The color cyan for formatting
+BLUE='\033[1;34'	 	 # The color blue for formatting
+
+
+
+# The following if statements, checks to see if this script is in your 
+# /usr/local/bin directory. If it is not in there, it will copy this 
+# script and make it an executable, so you can use updog anywhere
+# in your terminal
+if [[ -e $localbin/$0 ]]; 
+	then
+		#statements
+		echo "Proceeding with command, please choose"
+		echo "---------------------------------------"
+
+	else
+		echo "This has not been found in your $localbin "
+		echo
+		# Adding this script to the /usr/local/bin/
+		echo -e "Adding this script to ${GREEN}$localbin ${NC}"
+		cp $0 $localbin/$0
+		# Making this script an executable
+		echo "Making this script an executable"
+		chmod +x $localbin/$0
+
+fi
+
+
+# This is a function which takes a parameter, in our case
+# an array. For each item in the array, the function will
+# create an option for our menu. When a user chooses an 
+# option (site alias), it will then use that to push dev 
+# code to stage, for that site alias
+mymenu ()
+{
+  echo "Number of Projects: $#"
+  echo "If you ENTER a number higher than $# it will exit"  #echo "$@"
+  PS3='Which project do you want to update Stage : '
+  select option; do # in "$@" is the default
+  	# If the reply is higher than the size of the array
+  	# then exit
+    if [ "$REPLY" -gt "$#" ];
+    then
+      echo "Exiting..."
+      break;
+    # If the reply is between 1 and the size of the array,
+    # use that site alias to push code to its respective
+    # stage environment
+    elif [ 1 -le "$REPLY" ] && [ "$REPLY" -le $(($#)) ];
+    then
+      echo "You selected ${GREEN}$option ${NC} which is option $REPLY"
+      echo
+      echo "${CYAN}┌( ಠ‿ಠ)┘____________ ${NC}┌( ಠ‿ಠ)┘______________${BLUE}┌( ಠ‿ಠ)┘__________ ${NC}"
+      echo
+      echo "Updating Stage from Dev"
+      drush $option ac-code-deploy test --simulate
+      break;
+    else
+      echo "Incorrect Input: Select a number 1-$#"
+    fi
+  done
+}
+
+# Turn Drush SA output into an array
+# This output gives you a list of all the site aliases you have under your account
+listing=( $(drush sa | egrep '\.dev$') )
+# Using the mymenu command I pass the above array for the options in my menu
+mymenu "${listing[@]}"
+
+
+echo "Program is done"
