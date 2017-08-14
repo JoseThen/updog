@@ -6,6 +6,39 @@ NC='\033[0m'			 # No Color to move back to original coloring
 CYAN='\033[0;36m'		 # The color cyan for formatting
 BLUE='\033[1;34'	 	 # The color blue for formatting
 
+# Function created to get the process id of the most current Process in the
+# environment update.
+function id {
+  for word in $1; do
+  #statements
+  echo $word
+  break
+  done
+}
+
+# Function that checks for dependencies needed for this project.
+depend() {
+    # Check if Homebrew is in stalled if not, install it. Needed to install jq
+    if hash brew 2>/dev/null;
+    then
+        echo "Brew dependency satisfied"
+    else
+        echo "You are missing Homebrew. Installing now"
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    fi
+
+
+    # Check if jq is installed, if not install it
+    if hash jq 2>/dev/null;
+    then
+        echo "JQ dependencu satisfied"
+    else
+        echo "You are missing the jq program. Installing now"
+        brew install jq
+    fi
+
+
+}
 
 
 # The following if statements, checks to see if this script is in your 
@@ -19,6 +52,9 @@ if [[ -e $localbin/$0 ]];
 		echo "---------------------------------------"
 
 	else
+    #Installing dependencies
+    echo "Checking dependencies, if not available will install"
+    depend
 		echo "This has not been found in your $localbin "
 		echo
 		# Adding this script to the /usr/local/bin/
@@ -53,12 +89,14 @@ mymenu ()
     # stage environment
     elif [ 1 -le "$REPLY" ] && [ "$REPLY" -le $(($#)) ];
     then
-      echo "You selected ${GREEN}$option ${NC} which is option $REPLY"
+      echo -e "You selected ${GREEN}$option ${NC} which is option $REPLY"
       echo
-      echo "${CYAN}┌( ಠ‿ಠ)┘____________ ${NC}┌( ಠ‿ಠ)┘______________${BLUE}┌( ಠ‿ಠ)┘__________ ${NC}"
+      echo -e "${CYAN}┌( ಠ‿ಠ)┘____________┌( ಠ‿ಠ)┘______________┌( ಠ‿ಠ)┘__________ ${NC}"
       echo
       echo "Updating Stage from Dev"
       drush $option ac-code-deploy test --simulate
+      info=$(drush $option ac-task-list --limit=1)
+
       break;
     else
       echo "Incorrect Input: Select a number 1-$#"
@@ -68,9 +106,12 @@ mymenu ()
 
 # Turn Drush SA output into an array
 # This output gives you a list of all the site aliases you have under your account
-listing=( $(drush sa | egrep '\.dev$') )
+dev=( $(drush sa | egrep '\.dev$') )
+
+test=( $(drush sa | egrep '\.test') )
+
 # Using the mymenu command I pass the above array for the options in my menu
-mymenu "${listing[@]}"
+mymenu "${dev[@]}"
 
 
 echo "Program is done"
